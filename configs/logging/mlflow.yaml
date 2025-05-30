@@ -1,0 +1,5 @@
+# Logging configuration (MLflow specific)
+experiment_name: "TextDetection_${model.name}"
+tracking_uri: "http://127.0.0.1:8080" # MLflow tracking server
+# If server not available or URI is a local path, MLflow logs to ./mlruns
+log_model: true # Whether MLflow should log the model artifacts

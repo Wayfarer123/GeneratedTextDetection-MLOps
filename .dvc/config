@@ -1,0 +1,6 @@
+[core]
+    remote = mygdrive
+['remote "mygdrive"']
+    url = gdrive://1hJPpDzv3QcmCxwOobvMko7yEcNW_W4xq
+    gdrive_use_service_account = true
+    gdrive_service_account_json_file_path = ../generatedtextdetection-a38d1a979b00.json

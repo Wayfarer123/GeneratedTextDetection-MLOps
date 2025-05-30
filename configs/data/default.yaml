@@ -1,0 +1,9 @@
+train_file: "raw/subtaskA_train_monolingual.jsonl"
+test_file: "raw/subtaskA_dev_monolingual.jsonl"
+
+tokenizer_name: ${model.pretrained_model_path} # Model name for tokenizer
+max_len: 512
+batch_size: 32
+num_workers: 2
+n_samples_train: -1 # -1 for all samples
+n_samples_test: -1 # -1 for all samples

@@ -1,0 +1,11 @@
+# Model configuration
+name: "bert-tiny"
+pretrained_model_path: "prajjwal1/bert-tiny"
+cls_hidden_dim: 256
+output_dim: 2
+dropout_rate: 0.1
+learning_rate: 3e-5
+
+# Checkpoint path for loading (e.g., for export or continued training)
+# This will typically be overridden or set dynamically
+checkpoint_path: null # e.g., "lightning_logs/version_X/checkpoints/best_model.ckpt"

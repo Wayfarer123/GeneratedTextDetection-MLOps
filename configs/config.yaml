@@ -1,0 +1,22 @@
+defaults:
+  - data: default
+  - model: bert_tiny
+  - training: default
+  - logging: mlflow
+  - export: default
+  - override hydra/job_logging: colorlog
+  - override hydra/hydra_logging: colorlog
+
+project_name: "generated_text_detection"
+seed: 42
+
+data_dir: "data"
+models_dir: "models"
+onnx_models_dir: "${models_dir}/onnx"
+tensorrt_models_dir: "${models_dir}/tensorrt"
+
+inference:
+  onnx_model_path: "${onnx_models_dir}/detector_model.onnx" # Default path for predict.py
+  text_to_predict: "This is a sample text for prediction."
+  tokenizer_name: ${model.pretrained_model_path} # Match model's tokenizer
+  max_len: ${data.max_len} # Match training max_len

@@ -9,6 +9,15 @@ dependencies = [
     "tqdm>=4.67.1",
     "pandas>=2.2.3",
     "torch>=2.6.0",
+    "mlflow>=2.22.0",
+    "onnx>=1.18.0",
+    "transformers>=4.52.3",
+    "hydra-core>=1.3.2",
+    "pytorch-lightning>=2.5.1.post0",
+    "dvc>=3.59.2",
+    "torchmetrics>=1.7.2",
+    "omegaconf>=2.3.0",
+    "dvc-gdrive>=3.0.1",
 ]
 
 
@@ -22,3 +31,20 @@ torch = [
 name = "pytorch-cu128"
 url = "https://download.pytorch.org/whl/cu128"
 explicit = true
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.2.0",
+    "prettier>=0.0.7",
+    "ruff>=0.11.12",
+]
+
+
+[tool.setuptools.packages.find]
+where = ["generation_detector"]
+
+
+[tool.ruff]
+line-length = 88
+lint.select = ["E", "W", "F", "I", "UP", "C4", "B", "A", "RUF"] # I for isort, F for Pyflakes, etc.
+lint.ignore = ["E501"] # Handled by formatter

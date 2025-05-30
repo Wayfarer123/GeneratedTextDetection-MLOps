@@ -1,0 +1,7 @@
+# Training configuration
+epochs: 5
+accelerator: "gpu"
+devices: 1
+precision: "32-true"
+val_check_interval: 0.25 # Validate every 25% of an epoch, or an int for steps
+log_every_n_steps: 50
