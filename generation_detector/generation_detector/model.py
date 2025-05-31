@@ -38,9 +38,7 @@ class DetectionModelPL(pl.LightningModule):
         self.backbone = AutoModel.from_pretrained(model_config.pretrained_model_path)
 
         self.clf_head = BertClassifierHead(
-            bert_output_dim=self.self.backbone.encoder.layer[
-                1
-            ].output.dense.out_features,
+            bert_output_dim=self.backbone.encoder.layer[1].output.dense.out_features,
             hidden_dim=model_config.cls_hidden_dim,
             output_dim=model_config.output_dim,
             dropout_rate=model_config.dropout_rate,

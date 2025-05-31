@@ -4,13 +4,10 @@ defaults:
   - training: default
   - logging: mlflow
   - export: default
-  - override hydra/job_logging: colorlog
-  - override hydra/hydra_logging: colorlog
 
 project_name: "generated_text_detection"
 seed: 42
 
-data_dir: "data"
 models_dir: "models"
 onnx_models_dir: "${models_dir}/onnx"
 tensorrt_models_dir: "${models_dir}/tensorrt"
@@ -20,3 +17,13 @@ inference:
   text_to_predict: "This is a sample text for prediction."
   tokenizer_name: ${model.pretrained_model_path} # Match model's tokenizer
   max_len: ${data.max_len} # Match training max_len
+
+hydra:
+  run:
+    dir: outputs/${now:%Y-%m-%d}_${now:%H-%M-%S}
+  sweep:
+    dir: multirun/${now:%Y-%m-%d}_${now:%H-%M-%S}
+    subdir: ${hydra.job.num}
+  output_subdir: .hydra
+  job:
+    chdir: True

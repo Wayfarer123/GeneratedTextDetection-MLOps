@@ -1,3 +1,4 @@
+data_dir: "data/"
 train_file: "raw/subtaskA_train_monolingual.jsonl"
 test_file: "raw/subtaskA_dev_monolingual.jsonl"
 

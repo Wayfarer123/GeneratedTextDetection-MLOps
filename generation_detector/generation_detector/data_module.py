@@ -40,7 +40,11 @@ class Collator:
         input_ids = tokenized["input_ids"]
         attention_mask = tokenized["attention_mask"]
 
-        return input_ids, attention_mask, torch.tensor(labels, dtype=torch.long)
+        return {
+            "input_ids": input_ids,
+            "attention_mask": attention_mask,
+            "labels": torch.tensor(labels, dtype=torch.long),
+        }
 
 
 class DetectionDataModule(pl.LightningDataModule):
@@ -52,7 +56,7 @@ class DetectionDataModule(pl.LightningDataModule):
         self.train_dataset = None
         self.val_dataset = None
         self.test_dataset = None  # Optional test set
-        self.tokenizer = AutoTokenizer(self.data_config.tokenizer_name)
+        self.tokenizer = AutoTokenizer.from_pretrained(self.data_config.tokenizer_name)
         self.collator = Collator(
             tokenizer=self.tokenizer, max_len=self.data_config.max_len
         )
@@ -74,15 +78,15 @@ class DetectionDataModule(pl.LightningDataModule):
 
         if stage == "fit" or stage is None:
             self.train_dataset = TextDetectionDataset(
-                file_path=train_file_path, n_samples=self.data_config.n_samples_train
+                data_path=train_file_path, n_samples=self.data_config.n_samples_train
             )
             self.val_dataset = TextDetectionDataset(
-                file_path=test_file_path, n_samples=self.data_config.n_samples_test
+                data_path=test_file_path, n_samples=self.data_config.n_samples_test
             )
 
         if stage == "test" or stage is None:  # Could be same as val or a different one
             self.test_dataset = TextDetectionDataset(
-                file_path=test_file_path, n_samples=self.data_config.n_samples_test
+                data_path=test_file_path, n_samples=self.data_config.n_samples_test
             )
 
     def train_dataloader(self):

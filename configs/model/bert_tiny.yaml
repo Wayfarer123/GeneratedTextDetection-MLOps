@@ -1,5 +1,5 @@
 # Model configuration
-name: "bert-tiny"
+name: "bert-tiny-baseline"
 pretrained_model_path: "prajjwal1/bert-tiny"
 cls_hidden_dim: 256
 output_dim: 2

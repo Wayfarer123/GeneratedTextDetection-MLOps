@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import hydra
@@ -20,11 +19,10 @@ def train(cfg: DictConfig) -> None:
 
     # --- DVC Data Pull ---
     # Construct full paths for DVC targets relative to project_root
-    # This assumes data.train_file and data.test_file are like "raw/filename.jsonl"
-    # and data.data_dir is like "data"
+
     train_dvc_target = Path(cfg.data.data_dir) / cfg.data.train_file
     test_dvc_target = Path(cfg.data.data_dir) / cfg.data.test_file
-
+    # dvc_target = Path(cfg.data.data_dir) / "raw.dvc"
     pull_dvc_data(train_dvc_target, test_dvc_target, dvc_root_path=project_root)
 
     # --- DataModule ---
@@ -36,15 +34,17 @@ def train(cfg: DictConfig) -> None:
     model = DetectionModelPL(model_config=cfg.model)
 
     # --- Callbacks ---
+    checkpoint_dir = Path.cwd() / "checkpoints" / cfg.model.name
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+
     callbacks = []
     checkpoint_callback = ModelCheckpoint(
-        dirpath=os.path.join(
-            os.getcwd(), "checkpoints"
-        ),  # Saves checkpoints in hydra's output dir
-        filename="{epoch}-{val_loss:.2f}-{val_acc:.2f}",
-        monitor="val_acc",  # Monitor validation accuracy
+        dirpath=checkpoint_dir,  # Saves checkpoints in hydra's output dir
+        filename="epoch_{epoch}-vloss_{val_loss:.2f}-vacc_{val_acc:.2f}",
+        monitor="val_acc",
         mode="max",  # Save the model with the highest validation accuracy
-        save_top_k=1,
+        save_top_k=3,
+        auto_insert_metric_name=False,
     )
     callbacks.append(checkpoint_callback)
 
@@ -54,7 +54,7 @@ def train(cfg: DictConfig) -> None:
     mlf_logger = MLFlowLogger(
         experiment_name=cfg.logging.experiment_name,
         tracking_uri=cfg.logging.tracking_uri,
-        log_model=cfg.logging.log_model,
+        log_model=False,
         artifact_location=None,
         run_name=None,
     )
@@ -92,8 +92,15 @@ def train(cfg: DictConfig) -> None:
         mlf_logger.experiment.log_param(
             mlf_logger.run_id,
             "best_checkpoint_path_local",
-            checkpoint_callback.best_model_path,
+            checkpoint_callback.best_model_path.replace("\\", "/"),
         )
+        if cfg.logging.log_model:
+            checkpoint_path = Path(checkpoint_callback.best_model_path)
+            mlf_logger.experiment.log_artifact(
+                mlf_logger.run_id,
+                local_path=str(checkpoint_path),
+                artifact_path="checkpoints",
+            )
 
     # Make sure all logs are flushed
     mlf_logger.finalize("success")
