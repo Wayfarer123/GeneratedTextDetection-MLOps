@@ -18,12 +18,11 @@ inference:
   tokenizer_name: ${model.pretrained_model_path} # Match model's tokenizer
   max_len: ${data.max_len} # Match training max_len
 
+dir: "outputs/${model.name}"
+
 hydra:
   run:
-    dir: outputs/${now:%Y-%m-%d}_${now:%H-%M-%S}
-  sweep:
-    dir: multirun/${now:%Y-%m-%d}_${now:%H-%M-%S}
-    subdir: ${hydra.job.num}
+    dir: ${dir}
   output_subdir: .hydra
   job:
     chdir: True

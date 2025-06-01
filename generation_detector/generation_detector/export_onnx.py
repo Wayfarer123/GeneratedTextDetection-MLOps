@@ -1,10 +1,9 @@
-# src/text_detector/export_onnx.py
 import os
 from pathlib import Path
 
 import hydra
 import torch
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 
 from .model import DetectionModelPL
 from .utils import get_project_root
@@ -17,36 +16,17 @@ def export_to_onnx(cfg: DictConfig) -> None:
     project_root = get_project_root()
 
     # --- Load Model from Checkpoint ---
-    checkpoint_path_str = cfg.model.checkpoint_path
-    if not checkpoint_path_str:
-        raise (
-            ValueError,
-            "`model.checkpoint_path` not specified in config. Cannot export.",
-        )
+    checkpoint_path = Path(os.getcwd()) / "checkpoints" / "best_checkpoint.ckpt"
 
-    # Check if checkpoint_path is absolute or relative to hydra's output dir or project root
-    checkpoint_path = Path(checkpoint_path_str)
-    if not checkpoint_path.is_absolute():
-        # Try relative to current working directory (Hydra's output dir)
-        # Or, more robustly, relative to project root if it's a common pattern
-        potential_path_cwd = Path(os.getcwd()) / checkpoint_path_str
-        potential_path_root = project_root / checkpoint_path_str
+    print(f"\n\n{checkpoint_path}\n\n")
 
-        if potential_path_cwd.exists():
-            checkpoint_path = potential_path_cwd
-        elif potential_path_root.exists():
-            checkpoint_path = potential_path_root
-        else:
-            raise (
-                ValueError,
-                f"Checkpoint not found at {checkpoint_path_str} (tried CWD and project root).",
-            )
+    hparams_overrides = OmegaConf.to_container(cfg.model, resolve=True)
+    _ = hparams_overrides.pop("checkpoint_path")  # kind of kostyl
 
     trained_model = DetectionModelPL.load_from_checkpoint(
-        checkpoint_path,
-        model_config=cfg.model,  # Pass the model config, hparams might be picked from checkpoint
+        checkpoint_path, **hparams_overrides
     )
-
+    trained_model.to("cpu")
     trained_model.eval()
 
     # --- Prepare Dummy Input ---
@@ -76,9 +56,9 @@ def export_to_onnx(cfg: DictConfig) -> None:
         export_params=True,
         opset_version=17,
         do_constant_folding=True,
-        input_names=["input_ids", "attention_mask"],  # Optional: names for inputs
-        output_names=["output_logits"],  # Optional: names for outputs
-        dynamic_axes={  # Optional: if you want dynamic batch size or sequence length
+        input_names=["input_ids", "attention_mask"],
+        output_names=["output_logits"],
+        dynamic_axes={
             "input_ids": {0: "batch_size", 1: "sequence_length"},
             "attention_mask": {0: "batch_size", 1: "sequence_length"},
             "output_logits": {0: "batch_size"},

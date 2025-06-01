@@ -1,5 +1,5 @@
 # Training configuration
-epochs: 5
+epochs: 3
 accelerator: "gpu"
 devices: 1
 precision: "32-true"

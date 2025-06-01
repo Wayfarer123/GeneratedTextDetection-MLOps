@@ -1,0 +1,6 @@
+# Model export configuration
+onnx_output_path: "models/onnx/bert_tiny_baseline.onnx"
+input_sample_batch_size: 1 # For creating dummy input for ONNX export
+
+# tensorrt_engine_path: "models/tensorrt/detector_model.engine"
+# dummy_input_for_trt_path: "data/dummy_input_for_trt.pt" # Path to save/load dummy input

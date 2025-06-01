@@ -34,16 +34,16 @@ def train(cfg: DictConfig) -> None:
     model = DetectionModelPL(model_config=cfg.model)
 
     # --- Callbacks ---
-    checkpoint_dir = Path.cwd() / "checkpoints" / cfg.model.name
+    checkpoint_dir = Path.cwd() / "checkpoints"
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
     callbacks = []
     checkpoint_callback = ModelCheckpoint(
         dirpath=checkpoint_dir,  # Saves checkpoints in hydra's output dir
-        filename="epoch_{epoch}-vloss_{val_loss:.2f}-vacc_{val_acc:.2f}",
+        filename="best_checkpoint",
         monitor="val_acc",
         mode="max",  # Save the model with the highest validation accuracy
-        save_top_k=3,
+        save_top_k=1,
         auto_insert_metric_name=False,
     )
     callbacks.append(checkpoint_callback)
@@ -54,7 +54,7 @@ def train(cfg: DictConfig) -> None:
     mlf_logger = MLFlowLogger(
         experiment_name=cfg.logging.experiment_name,
         tracking_uri=cfg.logging.tracking_uri,
-        log_model=False,
+        log_model=False,  # had some problems with 'true', manually log below
         artifact_location=None,
         run_name=None,
     )
@@ -101,9 +101,6 @@ def train(cfg: DictConfig) -> None:
                 local_path=str(checkpoint_path),
                 artifact_path="checkpoints",
             )
-
-    # Make sure all logs are flushed
-    mlf_logger.finalize("success")
 
 
 if __name__ == "__main__":
