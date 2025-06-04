@@ -1,0 +1,5 @@
+# Inference configuration
+onnx_model_path: "${export.onnx_output_path}"
+text_to_predict: "This is a sample text for prediction. Let's see if the model thinks it's AI-generated."
+tokenizer_name: ${model.pretrained_model_path} # Model name for tokenizer
+max_len: ${data.max_len}

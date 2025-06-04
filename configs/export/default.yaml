@@ -1,6 +1,6 @@
 # Model export configuration
-onnx_output_path: "models/onnx/bert_tiny_baseline.onnx"
+onnx_output_path: "{$onnx_models_dir}/${model.name}.onnx"
 input_sample_batch_size: 1 # For creating dummy input for ONNX export
-
+mlflow_run_id_for_onnx_log: "6c46b7e18cb4408a8477dbd6877f3341"
 # tensorrt_engine_path: "models/tensorrt/detector_model.engine"
 # dummy_input_for_trt_path: "data/dummy_input_for_trt.pt" # Path to save/load dummy input

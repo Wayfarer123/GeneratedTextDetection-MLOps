@@ -1,9 +1,14 @@
 import os
+import tempfile
 from pathlib import Path
 
 import hydra
+import mlflow
+import onnx
 import torch
+from mlflow.tracking import MlflowClient
 from omegaconf import DictConfig, OmegaConf
+from transformers import AutoTokenizer
 
 from .model import DetectionModelPL
 from .utils import get_project_root
@@ -17,8 +22,6 @@ def export_to_onnx(cfg: DictConfig) -> None:
 
     # --- Load Model from Checkpoint ---
     checkpoint_path = Path(os.getcwd()) / "checkpoints" / "best_checkpoint.ckpt"
-
-    print(f"\n\n{checkpoint_path}\n\n")
 
     hparams_overrides = OmegaConf.to_container(cfg.model, resolve=True)
     _ = hparams_overrides.pop("checkpoint_path")  # kind of kostyl
@@ -68,6 +71,59 @@ def export_to_onnx(cfg: DictConfig) -> None:
     print(
         "Remember to add the ONNX model to DVC: `dvc add models/onnx/detector_model.onnx`"
     )
+
+    mlflow_run_id = cfg.export.get("mlflow_run_id_for_onnx_log")
+
+    if mlflow_run_id:
+        print(f"Logging ONNX model to MLflow run_id: {mlflow_run_id}")
+
+        loaded_onnx_model = onnx.load(str(onnx_output_path))
+
+        mlflow.set_tracking_uri(cfg.logging.tracking_uri)
+
+        onnx_model_artifact_path_in_mlflow = "onnx_model_for_serving"
+
+        with mlflow.start_run(run_id=mlflow_run_id, nested=True) as run:
+            print(f"Active MLflow run for ONNX logging: {run.info.run_id}")
+            model_info = mlflow.onnx.log_model(
+                onnx_model=loaded_onnx_model,
+                artifact_path=onnx_model_artifact_path_in_mlflow,
+                registered_model_name=cfg.model.name + "_onnx",
+            )
+
+            print(
+                f"ONNX model logged to MLflow under artifact path: {onnx_model_artifact_path_in_mlflow}"
+            )
+
+            registered_model_name = cfg.model.name + "_onnx"
+
+            client = MlflowClient(tracking_uri=cfg.logging.tracking_uri)
+            model_version = client.get_latest_versions(
+                name=registered_model_name, stages=["None"]
+            )[0].version
+
+            original_run_id = model_info.run_id
+
+            tokenizer_name_or_path = cfg.model.pretrained_model_path
+            tokenizer = AutoTokenizer.from_pretrained(tokenizer_name_or_path)
+
+            tokenizer_artifact_subpath = (
+                f"tokenizers_for_models/{registered_model_name}/{model_version}"
+            )
+
+            with tempfile.TemporaryDirectory() as tmp_tokenizer_dir:
+                tokenizer.save_pretrained(tmp_tokenizer_dir)
+                mlflow.log_artifacts(
+                    tmp_tokenizer_dir, artifact_path=tokenizer_artifact_subpath
+                )
+                print(
+                    f"Tokenizer for '{registered_model_name}' v{model_version} logged to run '{original_run_id}' under artifact path: '{tokenizer_artifact_subpath}'"
+                )
+
+    else:
+        print(
+            "`export.mlflow_run_id_for_onnx_log` not provided. Skipping MLflow ONNX model logging."
+        )
 
 
 if __name__ == "__main__":
