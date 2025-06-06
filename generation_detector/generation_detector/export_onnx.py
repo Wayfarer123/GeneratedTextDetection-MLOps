@@ -1,12 +1,13 @@
+import json
 import os
+import shutil
 import tempfile
 from pathlib import Path
 
 import hydra
 import mlflow
-import onnx
+import pandas as pd
 import torch
-from mlflow.tracking import MlflowClient
 from omegaconf import DictConfig, OmegaConf
 from transformers import AutoTokenizer
 
@@ -76,49 +77,93 @@ def export_to_onnx(cfg: DictConfig) -> None:
 
     if mlflow_run_id:
         print(f"Logging ONNX model to MLflow run_id: {mlflow_run_id}")
-
-        loaded_onnx_model = onnx.load(str(onnx_output_path))
-
         mlflow.set_tracking_uri(cfg.logging.tracking_uri)
 
-        onnx_model_artifact_path_in_mlflow = "onnx_model_for_serving"
+        tokenizer_name_or_path = cfg.model.pretrained_model_path
+        tokenizer = AutoTokenizer.from_pretrained(tokenizer_name_or_path)
 
-        with mlflow.start_run(run_id=mlflow_run_id, nested=True) as run:
-            print(f"Active MLflow run for ONNX logging: {run.info.run_id}")
-            model_info = mlflow.onnx.log_model(
-                onnx_model=loaded_onnx_model,
-                artifact_path=onnx_model_artifact_path_in_mlflow,
-                registered_model_name=cfg.model.name + "_onnx",
+        with tempfile.TemporaryDirectory() as data_for_pyfunc_model_dir:
+            data_for_pyfunc_model_path = Path(data_for_pyfunc_model_dir)
+            onnx_filename_in_data_path = "model.onnx"
+            shutil.copy(
+                str(onnx_output_path),
+                str(data_for_pyfunc_model_path / onnx_filename_in_data_path),
             )
 
-            print(
-                f"ONNX model logged to MLflow under artifact path: {onnx_model_artifact_path_in_mlflow}"
+            tokenizer_subdir_in_data_path = "tokenizer_files"
+            path_to_tokenizer_in_data_path = (
+                data_for_pyfunc_model_path / tokenizer_subdir_in_data_path
             )
 
-            registered_model_name = cfg.model.name + "_onnx"
+            tokenizer.save_pretrained(path_to_tokenizer_in_data_path)
+            max_len_value = cfg.data.max_len
+            hparams_for_pyfunc = {"max_len": max_len_value}
 
-            client = MlflowClient(tracking_uri=cfg.logging.tracking_uri)
-            model_version = client.get_latest_versions(
-                name=registered_model_name, stages=["None"]
-            )[0].version
+            hparams_file = path_to_tokenizer_in_data_path / "hparams.json"
+            with open(hparams_file, "w") as f:
+                json.dump(hparams_for_pyfunc, f)
 
-            original_run_id = model_info.run_id
+            pyfunc_model_artifact_path_in_mlflow = "onnx_with_tokenizer_for_serving"
 
-            tokenizer_name_or_path = cfg.model.pretrained_model_path
-            tokenizer = AutoTokenizer.from_pretrained(tokenizer_name_or_path)
-
-            tokenizer_artifact_subpath = (
-                f"tokenizers_for_models/{registered_model_name}/{model_version}"
+            input_example_df = pd.DataFrame(
+                {"text": ["This is an example sentence for signature inference."]}
             )
 
-            with tempfile.TemporaryDirectory() as tmp_tokenizer_dir:
-                tokenizer.save_pretrained(tmp_tokenizer_dir)
-                mlflow.log_artifacts(
-                    tmp_tokenizer_dir, artifact_path=tokenizer_artifact_subpath
+            wrapper_module_name = "generation_detector.serving_model_wrapper"
+            code_paths = [
+                str(project_root / "generation_detector" / "generation_detector")
+            ]
+
+            with mlflow.start_run(run_id=mlflow_run_id, nested=True) as run:
+                print(f"Active MLflow run for PyFunc logging: {run.info.run_id}")
+                mlflow.pyfunc.log_model(
+                    artifact_path=pyfunc_model_artifact_path_in_mlflow,
+                    loader_module=wrapper_module_name,
+                    code_paths=code_paths,
+                    data_path=str(data_for_pyfunc_model_path),
+                    input_example=input_example_df,
+                    registered_model_name=cfg.model.name + "_serving_pipeline",
                 )
                 print(
-                    f"Tokenizer for '{registered_model_name}' v{model_version} logged to run '{original_run_id}' under artifact path: '{tokenizer_artifact_subpath}'"
+                    f"PyFunc model logged to MLflow under artifact path: {pyfunc_model_artifact_path_in_mlflow}"
                 )
+
+        # with mlflow.start_run(run_id=mlflow_run_id, nested=True) as run:
+        #     print(f"Active MLflow run for ONNX logging: {run.info.run_id}")
+
+        #     loaded_onnx_model = onnx.load(str(onnx_output_path))
+        #     onnx_model_artifact_path_in_mlflow = "onnx_model_for_serving"
+        #     model_info = mlflow.onnx.log_model(
+        #         onnx_model=loaded_onnx_model,
+        #         artifact_path=onnx_model_artifact_path_in_mlflow,
+        #         registered_model_name=cfg.model.name + "_onnx",
+        #     )
+
+        #     print(
+        #         f"ONNX model logged to MLflow under artifact path: {onnx_model_artifact_path_in_mlflow}"
+        #     )
+
+        #     registered_model_name = cfg.model.name + "_onnx"
+
+        #     client = MlflowClient(tracking_uri=cfg.logging.tracking_uri)
+        #     model_version = client.get_latest_versions(
+        #         name=registered_model_name, stages=["None"]
+        #     )[0].version
+
+        #     original_run_id = model_info.run_id
+
+        #     tokenizer_artifact_subpath = (
+        #         f"tokenizers_for_models/{registered_model_name}/{model_version}"
+        #     )
+
+        #     with tempfile.TemporaryDirectory() as tmp_tokenizer_dir:
+        #         tokenizer.save_pretrained(tmp_tokenizer_dir)
+        #         mlflow.log_artifacts(
+        #             tmp_tokenizer_dir, artifact_path=tokenizer_artifact_subpath
+        #         )
+        #         print(
+        #             f"Tokenizer for '{registered_model_name}' v{model_version} logged to run '{original_run_id}' under artifact path: '{tokenizer_artifact_subpath}'"
+        #         )
 
     else:
         print(

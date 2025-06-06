@@ -1,6 +1,6 @@
 defaults:
   - data: default
-  - model: roberta-base
+  - model: bert_tiny
   - training: default
   - logging: mlflow
   - export: default
