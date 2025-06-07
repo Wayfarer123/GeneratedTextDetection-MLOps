@@ -119,11 +119,11 @@ To train the model:
 2.  **Run the training script:**
     The script uses Hydra for configuration. You can override parameters from the command line.
     ```bash
-    python src/text_detector/train.py
+    python -m generation_detection.train
     ```
     Example overrides:
     ```bash
-    python src/text_detector/train.py training.epochs=10 training.learning_rate=1e-5 data.batch_size=64
+    python -m generation_detection.train training.epochs=10 training.learning_rate=1e-5 data.batch_size=64
     ```
     Check `configs/` for all configurable parameters. Trained model checkpoints will be saved in `outputs/` by default (managed by PyTorch Lightning) and logged to MLflow.
 
@@ -137,7 +137,7 @@ After training, export the best model checkpoint to ONNX format. The training sc
 2.  Copy the id (`b0e08865e0b44d64a3a33ba7d5dd2029`) to the `configs/export/default.mlflow_run_id_for_onnx_log`
 3.  Run the export script:
     ```bash
-    python src/text_detector/export_onnx.py
+    python -m generation_detection.export_onnx
     ```
 
 That will save `.onnx` checkpoint to `models/onnx/model_name.onnx`. Additionally the code wraps the model with tokenizer as pyfunc for serving and save in `mlruns/Experiment ID/Run ID/artifacts/onnx_with_tokenizer_for_serving` and register this model in mlflow as `${model.model_name}/MODEL_VERSION`. By default `MODEL_VERSION` is an index number 1,2,3...
@@ -182,4 +182,8 @@ The script will output the predicted class (0 for human, 1 for AI-generated) and
     ```
 
 3.  **Client code example**
-    Check `scripts/demo_client_request.py` for the example request
+    Check `scripts/demo_client_request.py` for the example request or run it with default arguments as
+    ```bash
+        python scripts/demo_client_request.py
+    ```
+    to check the behaviour
