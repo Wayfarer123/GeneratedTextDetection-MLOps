@@ -1,9 +1,10 @@
 defaults:
   - data: default
-  - model: bert_tiny
+  - model: RoBERTa-base # go for bert_tiny for quick testing
   - training: default
   - logging: mlflow
   - export: default
+  - inference: default
 
 project_name: "generated_text_detection"
 seed: 42

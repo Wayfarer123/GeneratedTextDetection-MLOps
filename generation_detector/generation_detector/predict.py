@@ -1,4 +1,3 @@
-import warnings
 from pathlib import Path
 
 import hydra
@@ -99,25 +98,16 @@ def cli_predict_entrypoint(cfg: DictConfig) -> None:
 
     project_root = get_project_root()
 
-    # --- DVC Data Pull for ONNX model ---
-    onnx_model_dvc_target_str = cfg_inference.onnx_model_path + ".dvc"
-    onnx_model_dvc_target = Path(onnx_model_dvc_target_str)
-    if not onnx_model_dvc_target.is_absolute():
-        onnx_model_dvc_target = project_root / onnx_model_dvc_target
-
-    if onnx_model_dvc_target.exists():
-        relative_dvc_target_path = str(onnx_model_dvc_target.relative_to(project_root))
-        pull_dvc_data(relative_dvc_target_path, dvc_root_path=project_root)
-    else:
-        warnings.warn(
-            f"DVC file {onnx_model_dvc_target} not found. Assuming model is already present or not DVC tracked.",
-            UserWarning,
-            stacklevel=2,
-        )
-
-    # --- Load ONNX Model Path ---
+    # --- DVC Pull for ONNX model ---
     onnx_model_path_str = cfg_inference.onnx_model_path
     onnx_model_path = Path(onnx_model_path_str)
+    # if not onnx_model_path.is_absolute():
+    #     onnx_model_path = project_root / onnx_model_path
+
+    # if onnx_model_path.exists():
+    #     relative_dvc_target_path = str(onnx_model_path.relative_to(project_root))
+    pull_dvc_data(onnx_model_path, dvc_root_path=project_root)
+
     if not onnx_model_path.is_absolute():
         onnx_model_path = project_root / onnx_model_path_str
 
@@ -135,7 +125,6 @@ def cli_predict_entrypoint(cfg: DictConfig) -> None:
             class_names=class_names_map,
         )
 
-        # --- Display Results (for CLI) ---
         print("\n--- Inference Results ---")
         print(f"Input Text: '{text_to_predict}'")
         print(
