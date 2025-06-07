@@ -163,23 +163,23 @@ The script will output the predicted class (0 for human, 1 for AI-generated) and
     After that the model will await requests just with texts to classify, but in the following format.
 2.  **Send requests to the model**
     Served model expects POST requests at http://127.0.0.1:5001/invocations with headers
+
     ```json
     {
       "Content-Type": "application/json"
     }
     ```
+
     and payload:
+
     ```json
     {
-        "dataframe_split": {
-            "columns": ["text"],
-            "data": [
-            ["First text sample"],
-            ["Secon text sample"],
-            ...
-            ]
-        }
+      "dataframe_split": {
+        "columns": ["text"],
+        "data": [["First text sample"], ["Second text sample"]]
+      }
     }
     ```
+
 3.  **Client code example**
     Check `scripts/demo_client_request.py` for the example request
