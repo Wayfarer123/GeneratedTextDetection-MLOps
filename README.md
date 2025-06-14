@@ -73,7 +73,7 @@ This project uses DVC to manage large data files and models, storing them in Goo
 
 2.  **Setup steps:**
 
-- Obtaine the Google Cloud Service Account JSON key file (`generatedtextdetection-a38d1a979b00.json`) and place it in repo root. To get the file and be able to access the data text https://t.me/Nikita_Okhotnikov
+- Obtain the Google Cloud Service Account JSON key file (`generatedtextdetection-a38d1a979b00.json`) and place it in repo root. To get the file and be able to access the data text https://t.me/Nikita_Okhotnikov
 - To download the data and any DVC-tracked models, run the following command from the project root directory:
   ```bash
   dvc pull
